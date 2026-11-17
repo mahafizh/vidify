@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Shell(node -v)",
+      "Shell(npm:*)",
+      "Shell(ffmpeg:*)",
+      "Shell(docker:*)",
+      "Shell(node -e \"const p=require('./package.json');console.log(JSON.stringify({dependencies:p.dependencies,devDependencies:p.devDependencies},null,2))\")"
+    ],
+    "deny": [],
+    "defaultMode": "default"
+  }
+}

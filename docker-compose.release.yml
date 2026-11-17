@@ -1,0 +1,10 @@
+# Mode "pull saja": image diambil dari registry, tidak di-build di server.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.release.yml pull app
+#   docker compose -f docker-compose.yml -f docker-compose.release.yml up -d --no-build
+#
+# Atau cukup: ./scripts/deploy.sh --pull
+services:
+  app:
+    image: ${VIDIFY_IMAGE:?VIDIFY_IMAGE belum diisi di .env, contoh ghcr.io/user/vidify:latest}
+    pull_policy: always

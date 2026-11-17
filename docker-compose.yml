@@ -1,0 +1,69 @@
+name: vidify
+
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+    command:
+      - --innodb-buffer-pool-size=256M
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --skip-name-resolve
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-vidify}
+      MYSQL_USER: ${DB_USER:-vidify}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD belum diisi di .env}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD belum diisi di .env}
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-uroot', '-p${DB_ROOT_PASSWORD}']
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 30s
+
+  app:
+    build: .
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+    ports:
+      - '${APP_BIND:-127.0.0.1}:${APP_PORT:-3000}:3000'
+    environment:
+      DATABASE_URL: mysql://${DB_USER:-vidify}:${DB_PASSWORD}@db:3306/${DB_NAME:-vidify}?charset=utf8mb4
+      LIBRARY_ROOT: /media
+      DATA_DIR: /app/data
+    volumes:
+      - ./data:/app/data
+      - ${MEDIA_ROOT:-./media}:/media:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://127.0.0.1:3000/api/scan']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:?TUNNEL_TOKEN belum diisi di .env}
+    depends_on:
+      - app
